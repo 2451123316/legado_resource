@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         translate_the_words
 // @namespace    legado.reader.selection.tools
-// @version      1.5.0
-// @description  选中英文单词或句子翻译为中文，单词附带详细释义（词性、例句），需手动关闭。
+// @version      2.0.0
+// @description  选中英文单词显示多义中文释义（批量翻译，展示多个常见意思），长句整句翻译
 // @author       Legado
 // @category     阅读器
 // @match        *
@@ -15,117 +15,96 @@ legado.registerPlugin({
   id: "reader-selection-tools",
   name: "阅读器选中文本工具",
   setup: function (api) {
-    // 免费翻译接口（MyMemory）
-    async function translateText(text, sourceLang, targetLang) {
-      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLang}|${targetLang}`;
+    const SEP = " ||| ";
+
+    async function mymemoryTranslate(text, from, to) {
+      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 500))}&langpair=${from}|${to}`;
       const res = await api.http.request({ url, method: "GET" });
       const data = JSON.parse(res.body);
-      if (data.responseStatus !== 200 && data.responseStatus !== "200") {
-        throw new Error(data.responseDetails || "翻译服务错误");
+      if (data.responseStatus !== 200) {
+        throw new Error(data.responseDetails || "翻译失败");
       }
-      return data.responseData.translatedText || text;
+      return data.responseData.translatedText;
     }
 
-    // 免费英文词典（获取结构化数据）
-    async function getWordDefinition(word) {
+    async function fetchDictionary(word) {
       const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
-      try {
-        const res = await api.http.request({ url, method: "GET" });
-        const data = JSON.parse(res.body);
-        if (!Array.isArray(data) || data.length === 0) return null;
-        const entry = data[0];
-        const phonetic = entry.phonetic ? `🔊 /${entry.phonetic}/` : "";
-        const meanings = [];
-        for (const m of entry.meanings || []) {
-          // 词性单独一行
-          meanings.push(`【${m.partOfSpeech}】`);
-          // 每个释义占一行
-          m.definitions.slice(0, 3).forEach((d, i) => {
-            meanings.push(`  ${i + 1}. ${d.definition}`);
-            if (d.example) {
-              meanings.push(`    例：${d.example}`);
-            }
-          });
-        }
-        return { phonetic, meanings };
-      } catch {
-        return null;
-      }
+      const res = await api.http.request({ url, method: "GET" });
+      const data = JSON.parse(res.body);
+      if (!Array.isArray(data) || data.length === 0) return null;
+      return data;
     }
+
+    const posMap = {
+      noun: "名词", verb: "动词", adjective: "形容词", adverb: "副词",
+      preposition: "介词", conjunction: "连词", pronoun: "代词",
+      interjection: "感叹词", determiner: "限定词", numeral: "数词",
+      article: "冠词",
+    };
 
     return {
       readerContextActions: [
-        {
-          id: "dictionary",
-          name: "字典",
-          when: (ctx) => ctx.sourceType === "novel" && !!ctx.text,
-          run: async (ctx) => {
-            await api.ui.prompt({
-              title: "字典",
-              message: ctx.text,
-              fields: [
-                { type: "info", label: "选中文字", description: ctx.text },
-              ],
-              submitText: "关闭",
-              cancelText: "取消",
-            });
-          },
-        },
         {
           id: "translate",
           name: "翻译",
           when: (ctx) => ctx.sourceType === "novel" && !!ctx.text,
           run: async (ctx) => {
             const text = ctx.text.trim();
-            if (!text) {
-              await api.ui.toast("没有选中文字", "warning");
-              return;
-            }
-            try {
-              // 固定英译中
-              const mainTranslation = await translateText(text, "en", "zh-CN");
+            if (!text) { await api.ui.toast("没有选中文字", "warning"); return; }
 
-              // 如果是单个英文单词（无空格）则附加词典详解
-              let detail = "";
-              if (/^[a-zA-Z]+$/.test(text)) {
-                const def = await getWordDefinition(text);
-                if (def) {
-                  // 逐行翻译英文释义，保留换行格式
+            try {
+              const isWord = /^[a-zA-Z]+$/.test(text);
+
+              if (isWord) {
+                const entries = await fetchDictionary(text.toLowerCase());
+                if (entries) {
+                  const phonetic = entries[0].phonetic || entries[0].phonetics?.find(p => p.text)?.text || "";
                   const lines = [];
-                  if (def.phonetic) lines.push(def.phonetic);
-                  for (const line of def.meanings) {
-                    if (line.trim() === "") {
-                      lines.push("");
-                      continue;
-                    }
-                    // 翻译每一行（词性标签如【noun】会原样保留，由API处理）
-                    try {
-                      const transLine = await translateText(
-                        line,
-                        "en",
-                        "zh-CN",
-                      );
-                      lines.push(transLine);
-                    } catch {
-                      lines.push(line); // 翻译失败保留原文
+                  if (phonetic) lines.push(`🔊 /${phonetic}/`);
+                  lines.push("");
+
+                  for (const entry of entries) {
+                    for (const m of entry.meanings || []) {
+                      const posCn = posMap[m.partOfSpeech] || m.partOfSpeech;
+                      const defs = m.definitions.slice(0, 5);
+                      const enDefs = defs.map(d => d.definition);
+
+                      let cnDefs = enDefs;
+                      try {
+                        const joined = enDefs.join(SEP);
+                        const translated = await mymemoryTranslate(joined, "en", "zh-CN");
+                        cnDefs = translated.split(SEP).map(s => s.trim());
+                        if (cnDefs.length !== enDefs.length) cnDefs = enDefs;
+                      } catch {}
+
+                      lines.push(`【${posCn}】`);
+                      for (let i = 0; i < enDefs.length; i++) {
+                        lines.push(`  ${i + 1}. ${cnDefs[i] || enDefs[i]}`);
+                      }
                     }
                   }
-                  detail = `\n\n📖 详细释义：\n${lines.join("\n")}`;
+
+                  await api.ui.prompt({
+                    title: `📖 ${text}`,
+                    fields: [{
+                      type: "info",
+                      label: "释义",
+                      description: lines.join("\n"),
+                    }],
+                    submitText: "关闭",
+                  });
+                  return;
                 }
               }
 
+              const translation = await mymemoryTranslate(text, "en", "zh-CN");
               await api.ui.prompt({
                 title: "翻译结果",
-                message: `原文：${text}`,
                 fields: [
-                  {
-                    type: "info",
-                    label: "翻译",
-                    description: mainTranslation + detail,
-                  },
+                  { type: "info", label: "原文", description: text },
+                  { type: "info", label: "译文", description: translation },
                 ],
                 submitText: "关闭",
-                cancelText: "取消",
               });
             } catch (e) {
               await api.ui.toast("翻译失败：" + e.message, "error");
@@ -139,7 +118,7 @@ legado.registerPlugin({
           run: async (ctx) => {
             const values = await api.ui.prompt({
               title: "替换",
-              message: "为当前选中文字保存一个替换规则示例。",
+              message: "为当前选中文字保存替换规则",
               initialValues: { from: ctx.text, to: "" },
               fields: [
                 { type: "text", key: "from", label: "原文" },
@@ -150,13 +129,9 @@ legado.registerPlugin({
             });
             if (!values) return;
             const rules = api.storage.readJson("selectionReplaceRules", []);
-            rules.push({
-              from: String(values.from ?? ""),
-              to: String(values.to ?? ""),
-              time: Date.now(),
-            });
+            rules.push({ from: String(values.from ?? ""), to: String(values.to ?? ""), time: Date.now() });
             api.storage.writeJson("selectionReplaceRules", rules);
-            await api.ui.toast("替换规则已保存到插件存储", "success");
+            await api.ui.toast("替换规则已保存", "success");
           },
         },
       ],

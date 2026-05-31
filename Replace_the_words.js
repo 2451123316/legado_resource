@@ -9227,20 +9227,12 @@ async function _pickCandidate(candidates, eng, api) {
   try {
     if (api.ui && typeof api.ui.select === "function") {
       var choice = await api.ui.select("选择要删除的键值对", items);
-      if (choice >= 0 && choice < items.length) return candidates[choice].cn;
+      if (typeof choice === "number" && choice >= 0 && choice < items.length) {
+        return candidates[choice].cn;
+      }
       return null;
     }
   } catch (e1) {}
-  for (var c = 0; c < candidates.length; c++) {
-    try {
-      if (api.ui && typeof api.ui.confirm === "function") {
-        var ok = await api.ui.confirm("删除 [" + items[c] + "]?");
-        if (ok) return candidates[c].cn;
-      }
-    } catch (e2) {}
-    var ok = confirm("删除 " + items[c] + " ?");
-    if (ok) return candidates[c].cn;
-  }
   return null;
 }
 legado.registerPlugin({
@@ -9347,9 +9339,7 @@ legado.registerPlugin({
               deleted[key] = true;
               api.storage.writeJson("deletedVocabEntries", deleted);
               await api.ui.toast("success");
-            } catch (e) {
-              await api.ui.toast("success");
-            }
+            } catch (e) {}
           },
         },
       ],
