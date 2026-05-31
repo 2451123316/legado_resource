@@ -9230,9 +9230,18 @@ async function _pickCandidate(candidates, eng, api) {
       if (typeof choice === "number" && choice >= 0 && choice < items.length) {
         return candidates[choice].cn;
       }
-      return null;
     }
   } catch (e1) {}
+  for (var c = 0; c < candidates.length; c++) {
+    try {
+      if (api.ui && typeof api.ui.confirm === "function") {
+        var ok = await api.ui.confirm(items[c]);
+        if (ok) return candidates[c].cn;
+        continue;
+      }
+    } catch (e2) {}
+    if (confirm(items[c])) return candidates[c].cn;
+  }
   return null;
 }
 legado.registerPlugin({
@@ -9304,9 +9313,9 @@ legado.registerPlugin({
                 } else {
                   var found = null;
                   if (_currentPageContent) {
-                    for (var c = 0; c < candidates.length; c++) {
-                      if (_currentPageContent.indexOf(eng + "（" + candidates[c].cn + "）") >= 0) {
-                        found = candidates[c].cn;
+                    for (var c2 = 0; c2 < candidates.length; c2++) {
+                      if (_currentPageContent.indexOf(eng + "（" + candidates[c2].cn + "）") >= 0) {
+                        found = candidates[c2].cn;
                         break;
                       }
                     }
@@ -9338,7 +9347,7 @@ legado.registerPlugin({
               if (deleted[key]) return;
               deleted[key] = true;
               api.storage.writeJson("deletedVocabEntries", deleted);
-              await api.ui.toast("success");
+              await api.ui.toast("success", "success");
             } catch (e) {}
           },
         },

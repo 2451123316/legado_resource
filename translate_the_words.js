@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         translate_the_words
 // @namespace    legado.reader.selection.tools
-// @version      2.0.0
-// @description  选中英文单词显示多义中文释义（批量翻译，展示多个常见意思），长句整句翻译
+// @version      2.0.1
+// @description  选中英文单词显示多义中文释义，长句整句翻译
 // @author       Legado
 // @category     阅读器
 // @match        *
@@ -15,9 +15,8 @@ legado.registerPlugin({
   id: "reader-selection-tools",
   name: "阅读器选中文本工具",
   setup: function (api) {
-    const SEP = " ||| ";
 
-    async function mymemoryTranslate(text, from, to) {
+    async function translate(text, from, to) {
       const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 500))}&langpair=${from}|${to}`;
       const res = await api.http.request({ url, method: "GET" });
       const data = JSON.parse(res.body);
@@ -27,7 +26,7 @@ legado.registerPlugin({
       return data.responseData.translatedText;
     }
 
-    async function fetchDictionary(word) {
+    async function fetchDict(word) {
       const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
       const res = await api.http.request({ url, method: "GET" });
       const data = JSON.parse(res.body);
@@ -39,7 +38,6 @@ legado.registerPlugin({
       noun: "名词", verb: "动词", adjective: "形容词", adverb: "副词",
       preposition: "介词", conjunction: "连词", pronoun: "代词",
       interjection: "感叹词", determiner: "限定词", numeral: "数词",
-      article: "冠词",
     };
 
     return {
@@ -56,7 +54,7 @@ legado.registerPlugin({
               const isWord = /^[a-zA-Z]+$/.test(text);
 
               if (isWord) {
-                const entries = await fetchDictionary(text.toLowerCase());
+                const entries = await fetchDict(text.toLowerCase());
                 if (entries) {
                   const phonetic = entries[0].phonetic || entries[0].phonetics?.find(p => p.text)?.text || "";
                   const lines = [];
@@ -67,19 +65,14 @@ legado.registerPlugin({
                     for (const m of entry.meanings || []) {
                       const posCn = posMap[m.partOfSpeech] || m.partOfSpeech;
                       const defs = m.definitions.slice(0, 5);
-                      const enDefs = defs.map(d => d.definition);
-
-                      let cnDefs = enDefs;
-                      try {
-                        const joined = enDefs.join(SEP);
-                        const translated = await mymemoryTranslate(joined, "en", "zh-CN");
-                        cnDefs = translated.split(SEP).map(s => s.trim());
-                        if (cnDefs.length !== enDefs.length) cnDefs = enDefs;
-                      } catch {}
-
                       lines.push(`【${posCn}】`);
-                      for (let i = 0; i < enDefs.length; i++) {
-                        lines.push(`  ${i + 1}. ${cnDefs[i] || enDefs[i]}`);
+
+                      for (let i = 0; i < defs.length; i++) {
+                        let cn = defs[i].definition;
+                        try {
+                          cn = await translate(defs[i].definition, "en", "zh-CN");
+                        } catch {}
+                        lines.push(`  ${i + 1}. ${cn}`);
                       }
                     }
                   }
@@ -97,7 +90,7 @@ legado.registerPlugin({
                 }
               }
 
-              const translation = await mymemoryTranslate(text, "en", "zh-CN");
+              const translation = await translate(text, "en", "zh-CN");
               await api.ui.prompt({
                 title: "翻译结果",
                 fields: [
