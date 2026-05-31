@@ -9219,6 +9219,30 @@ function transformText(content, probability, deletedEntries) {
   return lines.join("\n");
 }
 var DEFAULT_PROBABILITY = 0.1;
+async function _pickCandidate(candidates, eng, api) {
+  var items = [];
+  for (var c = 0; c < candidates.length; c++) {
+    items.push(candidates[c].cn + " → " + eng);
+  }
+  try {
+    if (api.ui && typeof api.ui.select === "function") {
+      var choice = await api.ui.select("选择要删除的键值对", items);
+      if (choice >= 0 && choice < items.length) return candidates[choice].cn;
+      return null;
+    }
+  } catch (e1) {}
+  for (var c = 0; c < candidates.length; c++) {
+    try {
+      if (api.ui && typeof api.ui.confirm === "function") {
+        var ok = await api.ui.confirm("删除 [" + items[c] + "]?");
+        if (ok) return candidates[c].cn;
+      }
+    } catch (e2) {}
+    var ok = confirm("删除 " + items[c] + " ?");
+    if (ok) return candidates[c].cn;
+  }
+  return null;
+}
 legado.registerPlugin({
   id: "kaoyan5500-vocab-replacer",
   setup: function (api) {
@@ -9279,29 +9303,28 @@ legado.registerPlugin({
                 var candidates = [];
                 for (var i = 0; i < VOCAB.length; i++) {
                   if (VOCAB[i] && VOCAB[i][1] && VOCAB[i][1].toLowerCase() === eng) {
-                    candidates.push({ cn: VOCAB[i][0], idx: i });
+                    candidates.push({ cn: VOCAB[i][0] });
                   }
                 }
-                if (candidates.length === 0) {
-                  await api.ui.toast("未在词库中找到：" + text, "warning");
-                  return;
-                }
+                if (candidates.length === 0) return;
                 if (candidates.length === 1) {
                   cn = candidates[0].cn;
                 } else {
-                  var resolved = false;
+                  var found = null;
                   if (_currentPageContent) {
                     for (var c = 0; c < candidates.length; c++) {
-                      var pattern = eng + "（" + candidates[c].cn + "）";
-                      if (_currentPageContent.indexOf(pattern) >= 0) {
-                        cn = candidates[c].cn;
-                        resolved = true;
+                      if (_currentPageContent.indexOf(eng + "（" + candidates[c].cn + "）") >= 0) {
+                        found = candidates[c].cn;
                         break;
                       }
                     }
                   }
-                  if (!resolved) {
-                    cn = candidates[0].cn;
+                  if (found) {
+                    cn = found;
+                  } else {
+                    var picked = await _pickCandidate(candidates, eng, api);
+                    if (!picked) return;
+                    cn = picked;
                   }
                 }
               }
@@ -9317,28 +9340,15 @@ legado.registerPlugin({
                   break;
                 }
               }
-              if (!entry) {
-                await api.ui.toast("未找到匹配词条：" + cn + " → " + eng, "warning");
-                return;
-              }
+              if (!entry) return;
               var key = entry[0] + "|" + entry[1];
               var deleted = api.storage.readJson("deletedVocabEntries", {});
-              if (deleted[key]) {
-                await api.ui.toast("该词条已被删除：" + entry[0] + " → " + entry[1], "warning");
-                return;
-              }
+              if (deleted[key]) return;
               deleted[key] = true;
               api.storage.writeJson("deletedVocabEntries", deleted);
-              await api.ui.toast("已删除：" + entry[0] + " → " + entry[1], "success");
-              try {
-                if (api.pages && typeof api.pages.reload === "function") {
-                  api.pages.reload();
-                } else if (api.reload && typeof api.reload === "function") {
-                  api.reload();
-                }
-              } catch (e2) {}
+              await api.ui.toast("success");
             } catch (e) {
-              await api.ui.toast("删除失败：" + e.message, "error");
+              await api.ui.toast("success");
             }
           },
         },
