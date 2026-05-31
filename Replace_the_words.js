@@ -600,8 +600,6 @@ var VOCAB = [
   ["词汇表", "vocabulary"],
   ["瓷器", "china"],
   ["雌的", "female"],
-  ["次", "time"],
-  ["回", "time"],
   ["次序", "order"],
   ["刺耳的", "harsh"],
   ["刺激", "incentive"],
@@ -647,7 +645,6 @@ var VOCAB = [
   ["大便", "stool"],
   ["大茶杯", "mug"],
   ["大臣", "chancellor"],
-  ["大的", "big"],
   ["大壶", "jug"],
   ["罐", "jug"],
   ["盂", "jug"],
@@ -3320,7 +3317,7 @@ var VOCAB = [
   ["实施", "administer"],
   ["十八", "eighteen"],
   ["十八个", "eighteen"],
-  ["十几岁的青少年", "teenager"],
+  ["青少年", "teenager"],
   ["十年", "decade"],
   ["十四", "fourteen"],
   ["十四个", "fourteen"],
@@ -4118,7 +4115,6 @@ var VOCAB = [
   ["现实的", "actual"],
   ["真实的", "actual"],
   ["目前的", "actual"],
-  ["现在", "today"],
   ["限定", "entail"],
   ["限制", "confine"],
   ["限制", "constrain"],
@@ -4126,7 +4122,6 @@ var VOCAB = [
   ["线的", "linear"],
   ["直线的", "linear"],
   ["线状的", "linear"],
-  ["线路", "line"],
   ["线性的", "linear"],
   ["宪法", "constitution"],
   ["宪章", "charter"],
@@ -4221,7 +4216,6 @@ var VOCAB = [
   ["小酒店", "pub"],
   ["小旅馆", "pub"],
   ["小麦", "wheat"],
-  ["小毛病", "bug"],
   ["小农", "peasant"],
   ["小山", "hill"],
   ["山岗", "hill"],
@@ -4272,11 +4266,9 @@ var VOCAB = [
   ["新方法", "innovation"],
   ["新发明", "innovation"],
   ["新纪元", "epoch"],
-  ["新来的", "new"],
   ["新娘", "bride"],
   ["新生", "renaissance"],
   ["复兴", "renaissance"],
-  ["新闻", "news"],
   ["消息", "news"],
   ["新闻报道", "despatch"],
   ["新闻报道", "news"],
@@ -4292,8 +4284,6 @@ var VOCAB = [
   ["信仰", "belief"],
   ["信条", "belief"],
   ["信仰的改变", "conversion"],
-  ["星期", "week"],
-  ["周", "week"],
   ["星系", "galaxy"],
   ["行车道", "street"],
   ["行得通的", "feasible"],
@@ -4910,7 +4900,6 @@ var VOCAB = [
   ["前后", "somewhere"],
   ["大约", "somewhere"],
   ["在活动中的", "active"],
-  ["在今天", "today"],
   ["在今晚", "tonight"],
   ["在楼上", "upstairs"],
   ["在前面", "ahead"],
@@ -4986,10 +4975,7 @@ var VOCAB = [
   ["长袍", "gown"],
   ["特殊场合穿的长服", "gown"],
   ["长沙发", "couch"],
-  ["长沙发", "sofa"],
-  ["沙发", "sofa"],
   ["长时间的", "old"],
-  ["老的", "old"],
   ["长条", "stripe"],
   ["条纹", "stripe"],
   ["长途公共汽车", "coach"],
@@ -5004,7 +4990,6 @@ var VOCAB = [
   ["障碍", "barrier"],
   ["招惹", "provoke"],
   ["招收", "enroll"],
-  ["找到", "find"],
   ["沼泽", "swamp"],
   ["召唤", "summon"],
   ["照亮", "illuminate"],
@@ -5064,8 +5049,6 @@ var VOCAB = [
   ["正确无误的", "accurate"],
   ["正式的", "formal"],
   ["正式宣布", "announce"],
-  ["正文", "text"],
-  ["文本", "text"],
   ["正直的", "straightforward"],
   ["证件", "identification"],
   ["证据", "evidence"],
@@ -5088,7 +5071,6 @@ var VOCAB = [
   ["支配", "rule"],
   ["支援", "boost"],
   ["支柱", "leg"],
-  ["知道", "see"],
   ["获悉", "see"],
   ["知道", "know"],
   ["了解", "know"],
@@ -6061,8 +6043,6 @@ var VOCAB = [
   ["黑暗", "darkness"],
   ["黑色", "black"],
   ["痕迹", "trace"],
-  ["很", "very"],
-  ["很坏的", "bad"],
   ["狠心的", "cruel"],
   ["横穿", "cross"],
   ["轰炸", "bomb"],
@@ -6204,7 +6184,6 @@ var VOCAB = [
   ["界限", "boundary"],
   ["借出", "lend"],
   ["借口", "excuse"],
-  ["今天", "today"],
   ["谨慎", "prudence"],
   ["尽力", "endeavor"],
   ["进入", "entry"],
@@ -6213,7 +6192,6 @@ var VOCAB = [
   ["进化", "evolution"],
   ["进口", "import"],
   ["进行", "proceed"],
-  ["禁止", "ban"],
   ["经常", "often"],
   ["经验", "experience"],
   ["经营", "manage"],
@@ -6244,12 +6222,9 @@ var VOCAB = [
   ["军队", "military"],
   ["军人的", "martial"],
   ["卡车", "truck"],
-  ["卡片", "card"],
   ["卡通", "cartoon"],
-  ["开辟", "open"],
   ["开端", "outset"],
   ["开放", "opening"],
-  ["开关", "button"],
   ["开会", "meeting"],
   ["开阔的", "spacious"],
   ["开朗的", "cheerful"],
@@ -6304,7 +6279,6 @@ var VOCAB = [
   ["浪费", "waste"],
   ["牢固的", "secure"],
   ["唠叨", "nag"],
-  ["老板", "boss"],
   ["老年", "oldage"],
   ["乐观", "optimism"],
   ["类型", "genre"],
@@ -6314,7 +6288,6 @@ var VOCAB = [
   ["理发", "haircut"],
   ["理解", "understanding"],
   ["理论", "theory"],
-  ["力量", "power"],
   ["力气", "strength"],
   ["历史", "history"],
   ["利润", "profit"],
@@ -6325,7 +6298,6 @@ var VOCAB = [
   ["怜悯", "pity"],
   ["联系", "contact"],
   ["粮食", "grain"],
-  ["凉爽的", "cool"],
   ["临时", "temporary"],
   ["灵活", "flexibility"],
   ["灵敏的", "sensitive"],
@@ -7332,7 +7304,6 @@ var VOCAB = [
   ["打瞌睡", "doze"],
   ["打扰", "disturb"],
   ["打印", "print"],
-  ["大", "big"],
   ["大胆的", "bold"],
   ["大地", "earth"],
   ["大都市", "metropolis"],
@@ -7341,7 +7312,6 @@ var VOCAB = [
   ["大锅", "cauldron"],
   ["大会", "convention"],
   ["大家", "all"],
-  ["大量", "mass"],
   ["大脑", "brain"],
   ["大批", "multitude"],
   ["大厦", "mansion"],
@@ -7550,7 +7520,6 @@ var VOCAB = [
   ["广阔", "vast"],
   ["归还", "return"],
   ["规定", "stipulate"],
-  ["规则", "rule"],
   ["贵重的", "valuable"],
   ["国家", "state"],
   ["国库", "treasury"],
@@ -7592,7 +7561,6 @@ var VOCAB = [
   ["混乱", "disorder"],
   ["活", "alive"],
   ["活泼的", "brisk"],
-  ["火", "fire"],
   ["伙伴", "pal"],
   ["或许", "perhaps"],
   ["几乎", "nearly"],
@@ -7872,14 +7840,12 @@ var VOCAB = [
   ["听觉", "hearing"],
   ["停留", "stay"],
   ["通常", "generally"],
-  ["通过", "via"],
   ["通信", "correspondence"],
   ["通行税", "toll"],
   ["通知", "inform"],
   ["同伴", "partner"],
   ["同意", "agree"],
   ["同志", "comrade"],
-  ["头", "head"],
   ["秃头的", "bald"],
   ["突然", "sudden"],
   ["团结", "unite"],
@@ -8454,7 +8420,6 @@ var VOCAB = [
   ["十一", "eleven"],
   ["合格的", "eligible"],
   ["雄辩的", "eloquent"],
-  ["其他的", "else"],
   ["其他地方", "elsewhere"],
   ["胚胎", "embryo"],
   ["紧急的", "emergency"],
@@ -8467,7 +8432,6 @@ var VOCAB = [
   ["启用", "enable"],
   ["包围", "enclose"],
   ["遭遇", "encounter"],
-  ["结束", "end"],
   ["危及", "endanger"],
   ["最终的", "ending"],
   ["耐力", "endurance"],
@@ -8737,7 +8701,6 @@ var VOCAB = [
   ["光荣", "glory"],
   ["发光", "glow"],
   ["胶水", "glue"],
-  ["去", "go"],
   ["神", "god"],
   ["金色的", "golden"],
   ["高尔夫", "golf"],
@@ -8754,7 +8717,6 @@ var VOCAB = [
   ["坟墓", "grave"],
   ["重力", "gravity"],
   ["贪婪的", "greedy"],
-  ["绿色", "green"],
   ["问候", "greet"],
   ["磨", "grind"],
   ["紧握", "grip"],
@@ -8787,10 +8749,8 @@ var VOCAB = [
   ["仇恨", "hatred"],
   ["拥有", "have"],
   ["危险", "hazard"],
-  ["头部", "head"],
   ["治愈", "heal"],
   ["听到", "hear"],
-  ["心", "heart"],
   ["热的", "heating"],
   ["树篱", "hedge"],
   ["脚跟", "heel"],
@@ -8806,7 +8766,6 @@ var VOCAB = [
   ["高度", "highly"],
   ["远足", "hike"],
   ["山", "hill"],
-  ["他", "him"],
   ["雇用", "hire"],
   ["他的", "his"],
   ["历史的", "historical"],
@@ -9284,7 +9243,11 @@ legado.registerPlugin({
             if (!text) return false;
             if (/[（(]/.test(ctx.text)) return true;
             for (var i = 0; i < VOCAB.length; i++) {
-              if (VOCAB[i] && VOCAB[i][1] && VOCAB[i][1].toLowerCase() === text) {
+              if (
+                VOCAB[i] &&
+                VOCAB[i][1] &&
+                VOCAB[i][1].toLowerCase() === text
+              ) {
                 return true;
               }
             }
@@ -9303,7 +9266,11 @@ legado.registerPlugin({
                 eng = text.toLowerCase();
                 var candidates = [];
                 for (var i = 0; i < VOCAB.length; i++) {
-                  if (VOCAB[i] && VOCAB[i][1] && VOCAB[i][1].toLowerCase() === eng) {
+                  if (
+                    VOCAB[i] &&
+                    VOCAB[i][1] &&
+                    VOCAB[i][1].toLowerCase() === eng
+                  ) {
                     candidates.push({ cn: VOCAB[i][0] });
                   }
                 }
@@ -9314,7 +9281,11 @@ legado.registerPlugin({
                   var found = null;
                   if (_currentPageContent) {
                     for (var c2 = 0; c2 < candidates.length; c2++) {
-                      if (_currentPageContent.indexOf(eng + "（" + candidates[c2].cn + "）") >= 0) {
+                      if (
+                        _currentPageContent.indexOf(
+                          eng + "（" + candidates[c2].cn + "）",
+                        ) >= 0
+                      ) {
                         found = candidates[c2].cn;
                         break;
                       }
