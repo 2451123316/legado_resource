@@ -9152,6 +9152,7 @@ var VOCAB = [
 var SORTED_VOCAB = VOCAB.slice().sort(function (a, b) {
   return b[0].length - a[0].length || a[0].localeCompare(b[0]);
 });
+var _currentPageContent = "";
 function transformText(content, probability, deletedEntries) {
   if (!content) return "";
   var deletedMap = {};
@@ -9253,19 +9254,57 @@ legado.registerPlugin({
           id: "delete-vocab-entry",
           name: "删除词条",
           when: function (ctx) {
-            return ctx.sourceType === "novel" && !!ctx.text;
+            if (ctx.sourceType !== "novel" || !ctx.text) return false;
+            var text = ctx.text.toLowerCase().trim();
+            if (!text) return false;
+            if (/[（(]/.test(ctx.text)) return true;
+            for (var i = 0; i < VOCAB.length; i++) {
+              if (VOCAB[i] && VOCAB[i][1] && VOCAB[i][1].toLowerCase() === text) {
+                return true;
+              }
+            }
+            return false;
           },
           run: async function (ctx) {
             try {
               var text = ctx.text.trim();
               if (!text) return;
-              var parts = text.match(/(.+?)（([^）]+)）/);
-              if (!parts) {
-                await api.ui.toast("请选中完整词条（含中文释义）", "warning");
-                return;
+              var eng, cn;
+              var fullMatch = text.match(/^(.+?)[（(]([^）)]+)[）)]$/);
+              if (fullMatch) {
+                eng = fullMatch[1].toLowerCase();
+                cn = fullMatch[2];
+              } else {
+                eng = text.toLowerCase();
+                var candidates = [];
+                for (var i = 0; i < VOCAB.length; i++) {
+                  if (VOCAB[i] && VOCAB[i][1] && VOCAB[i][1].toLowerCase() === eng) {
+                    candidates.push({ cn: VOCAB[i][0], idx: i });
+                  }
+                }
+                if (candidates.length === 0) {
+                  await api.ui.toast("未在词库中找到：" + text, "warning");
+                  return;
+                }
+                if (candidates.length === 1) {
+                  cn = candidates[0].cn;
+                } else {
+                  var resolved = false;
+                  if (_currentPageContent) {
+                    for (var c = 0; c < candidates.length; c++) {
+                      var pattern = eng + "（" + candidates[c].cn + "）";
+                      if (_currentPageContent.indexOf(pattern) >= 0) {
+                        cn = candidates[c].cn;
+                        resolved = true;
+                        break;
+                      }
+                    }
+                  }
+                  if (!resolved) {
+                    cn = candidates[0].cn;
+                  }
+                }
               }
-              var eng = parts[1].toLowerCase();
-              var cn = parts[2];
               var entry = null;
               for (var i = 0; i < VOCAB.length; i++) {
                 if (
@@ -9279,20 +9318,25 @@ legado.registerPlugin({
                 }
               }
               if (!entry) {
-                await api.ui.toast(
-                  "未找到匹配词条：" + cn + " → " + eng,
-                  "warning",
-                );
+                await api.ui.toast("未找到匹配词条：" + cn + " → " + eng, "warning");
                 return;
               }
               var key = entry[0] + "|" + entry[1];
               var deleted = api.storage.readJson("deletedVocabEntries", {});
+              if (deleted[key]) {
+                await api.ui.toast("该词条已被删除：" + entry[0] + " → " + entry[1], "warning");
+                return;
+              }
               deleted[key] = true;
               api.storage.writeJson("deletedVocabEntries", deleted);
-              await api.ui.toast(
-                "已删除：" + entry[0] + " → " + entry[1],
-                "success",
-              );
+              await api.ui.toast("已删除：" + entry[0] + " → " + entry[1], "success");
+              try {
+                if (api.pages && typeof api.pages.reload === "function") {
+                  api.pages.reload();
+                } else if (api.reload && typeof api.reload === "function") {
+                  api.reload();
+                }
+              } catch (e2) {}
             } catch (e) {
               await api.ui.toast("删除失败：" + e.message, "error");
             }
@@ -9302,6 +9346,7 @@ legado.registerPlugin({
       hooks: {
         "reader.content.beforePaginate": function (payload, hookApi) {
           try {
+            _currentPageContent = payload.content;
             var p = hookApi.settings.get("probability", DEFAULT_PROBABILITY);
             var deleted = api.storage.readJson("deletedVocabEntries", {});
             return transformText(payload.content, p, deleted);
