@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         translate_the_words
 // @namespace    legado.reader.selection.tools
-// @version      2.0.1
+// @version      3.1.0
 // @description  选中英文单词显示多义中文释义，长句整句翻译
 // @author       Legado
 // @category     阅读器
@@ -16,22 +16,36 @@ legado.registerPlugin({
   name: "阅读器选中文本工具",
   setup: function (api) {
 
-    async function translate(text, from, to) {
-      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 500))}&langpair=${from}|${to}`;
-      const res = await api.http.request({ url, method: "GET" });
-      const data = JSON.parse(res.body);
-      if (data.responseStatus !== 200) {
-        throw new Error(data.responseDetails || "翻译失败");
+    const GT = "https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=en&tl=zh-CN&q=";
+
+    async function googleTranslate(text) {
+      try {
+        const url = GT + encodeURIComponent((text || "").slice(0, 2000));
+        const res = await api.http.request({ url, method: "GET" });
+        const data = JSON.parse(res.body);
+        const parts = [];
+        const arr = data[0];
+        if (Array.isArray(arr)) {
+          for (const item of arr) {
+            if (item && item[0]) parts.push(item[0]);
+          }
+        }
+        return parts.join("") || text;
+      } catch {
+        return text;
       }
-      return data.responseData.translatedText;
     }
 
     async function fetchDict(word) {
-      const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
-      const res = await api.http.request({ url, method: "GET" });
-      const data = JSON.parse(res.body);
-      if (!Array.isArray(data) || data.length === 0) return null;
-      return data;
+      try {
+        const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
+        const res = await api.http.request({ url, method: "GET" });
+        const data = JSON.parse(res.body);
+        if (!Array.isArray(data) || data.length === 0) return null;
+        return data;
+      } catch {
+        return null;
+      }
     }
 
     const posMap = {
@@ -51,34 +65,28 @@ legado.registerPlugin({
             if (!text) { await api.ui.toast("没有选中文字", "warning"); return; }
 
             try {
-              const isWord = /^[a-zA-Z]+$/.test(text);
-
-              if (isWord) {
+              if (/^[a-zA-Z]+$/.test(text)) {
                 const entries = await fetchDict(text.toLowerCase());
                 if (entries) {
                   const phonetic = entries[0].phonetic || entries[0].phonetics?.find(p => p.text)?.text || "";
                   const lines = [];
+                  lines.push(text);
                   if (phonetic) lines.push(`🔊 /${phonetic}/`);
-                  lines.push("");
 
                   for (const entry of entries) {
                     for (const m of entry.meanings || []) {
                       const posCn = posMap[m.partOfSpeech] || m.partOfSpeech;
                       const defs = m.definitions.slice(0, 5);
                       lines.push(`【${posCn}】`);
-
                       for (let i = 0; i < defs.length; i++) {
-                        let cn = defs[i].definition;
-                        try {
-                          cn = await translate(defs[i].definition, "en", "zh-CN");
-                        } catch {}
+                        const cn = await googleTranslate(defs[i].definition);
                         lines.push(`  ${i + 1}. ${cn}`);
                       }
                     }
                   }
 
                   await api.ui.prompt({
-                    title: `📖 ${text}`,
+                    title: "翻译结果",
                     fields: [{
                       type: "info",
                       label: "释义",
@@ -90,7 +98,7 @@ legado.registerPlugin({
                 }
               }
 
-              const translation = await translate(text, "en", "zh-CN");
+              const translation = await googleTranslate(text);
               await api.ui.prompt({
                 title: "翻译结果",
                 fields: [
@@ -100,7 +108,7 @@ legado.registerPlugin({
                 submitText: "关闭",
               });
             } catch (e) {
-              await api.ui.toast("翻译失败：" + e.message, "error");
+              try { await api.ui.toast("翻译失败", "error"); } catch {}
             }
           },
         },
@@ -109,22 +117,24 @@ legado.registerPlugin({
           name: "替换",
           when: (ctx) => ctx.sourceType === "novel" && !!ctx.text,
           run: async (ctx) => {
-            const values = await api.ui.prompt({
-              title: "替换",
-              message: "为当前选中文字保存替换规则",
-              initialValues: { from: ctx.text, to: "" },
-              fields: [
-                { type: "text", key: "from", label: "原文" },
-                { type: "text", key: "to", label: "替换为" },
-              ],
-              submitText: "保存",
-              cancelText: "取消",
-            });
-            if (!values) return;
-            const rules = api.storage.readJson("selectionReplaceRules", []);
-            rules.push({ from: String(values.from ?? ""), to: String(values.to ?? ""), time: Date.now() });
-            api.storage.writeJson("selectionReplaceRules", rules);
-            await api.ui.toast("替换规则已保存", "success");
+            try {
+              const values = await api.ui.prompt({
+                title: "替换",
+                message: "为当前选中文字保存替换规则",
+                initialValues: { from: ctx.text, to: "" },
+                fields: [
+                  { type: "text", key: "from", label: "原文" },
+                  { type: "text", key: "to", label: "替换为" },
+                ],
+                submitText: "保存",
+                cancelText: "取消",
+              });
+              if (!values) return;
+              const rules = api.storage.readJson("selectionReplaceRules", []);
+              rules.push({ from: String(values.from ?? ""), to: String(values.to ?? ""), time: Date.now() });
+              api.storage.writeJson("selectionReplaceRules", rules);
+              await api.ui.toast("替换规则已保存", "success");
+            } catch {}
           },
         },
       ],
