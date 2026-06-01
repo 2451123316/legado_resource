@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         translate_the_words
 // @namespace    legado.reader.selection.tools
-// @version      3.1.0
+// @version      3.3.0
 // @description  选中英文单词显示多义中文释义，长句整句翻译
 // @author       Legado
 // @category     阅读器
@@ -16,36 +16,22 @@ legado.registerPlugin({
   name: "阅读器选中文本工具",
   setup: function (api) {
 
-    const GT = "https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=en&tl=zh-CN&q=";
-
-    async function googleTranslate(text) {
+    async function get(url) {
       try {
-        const url = GT + encodeURIComponent((text || "").slice(0, 2000));
         const res = await api.http.request({ url, method: "GET" });
-        const data = JSON.parse(res.body);
-        const parts = [];
-        const arr = data[0];
-        if (Array.isArray(arr)) {
-          for (const item of arr) {
-            if (item && item[0]) parts.push(item[0]);
-          }
-        }
-        return parts.join("") || text;
-      } catch {
-        return text;
-      }
+        if (res && res.body) return JSON.parse(res.body);
+      } catch {}
+      return null;
     }
 
-    async function fetchDict(word) {
-      try {
-        const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`;
-        const res = await api.http.request({ url, method: "GET" });
-        const data = JSON.parse(res.body);
-        if (!Array.isArray(data) || data.length === 0) return null;
-        return data;
-      } catch {
-        return null;
+    function words(text) {
+      const parts = [];
+      if (Array.isArray(text)) {
+        for (const item of text) {
+          if (item && item[0]) parts.push(item[0]);
+        }
       }
+      return parts.join("");
     }
 
     const posMap = {
@@ -62,54 +48,46 @@ legado.registerPlugin({
           when: (ctx) => ctx.sourceType === "novel" && !!ctx.text,
           run: async (ctx) => {
             const text = ctx.text.trim();
-            if (!text) { await api.ui.toast("没有选中文字", "warning"); return; }
+            if (!text) return;
 
             try {
               if (/^[a-zA-Z]+$/.test(text)) {
-                const entries = await fetchDict(text.toLowerCase());
-                if (entries) {
-                  const phonetic = entries[0].phonetic || entries[0].phonetics?.find(p => p.text)?.text || "";
-                  const lines = [];
-                  lines.push(text);
+                const word = text.toLowerCase();
+                const dict = await get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+
+                if (dict && Array.isArray(dict) && dict.length > 0) {
+                  const first = dict[0];
+                  const phonetic = first.phonetic || (first.phonetics || []).find(p => p.text)?.text || "";
+                  const lines = [text];
                   if (phonetic) lines.push(`🔊 /${phonetic}/`);
 
-                  for (const entry of entries) {
+                  for (const entry of dict) {
                     for (const m of entry.meanings || []) {
                       const posCn = posMap[m.partOfSpeech] || m.partOfSpeech;
                       const defs = m.definitions.slice(0, 5);
                       lines.push(`【${posCn}】`);
+
                       for (let i = 0; i < defs.length; i++) {
-                        const cn = await googleTranslate(defs[i].definition);
+                        let cn = defs[i].definition;
+                        const trans = await get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(defs[i].definition.slice(0, 300))}&langpair=en|zh-CN`);
+                        if (trans && trans.responseData && trans.responseData.translatedText) {
+                          cn = trans.responseData.translatedText;
+                        }
                         lines.push(`  ${i + 1}. ${cn}`);
                       }
                     }
                   }
 
-                  await api.ui.prompt({
-                    title: "翻译结果",
-                    fields: [{
-                      type: "info",
-                      label: "释义",
-                      description: lines.join("\n"),
-                    }],
-                    submitText: "关闭",
-                  });
+                  await api.ui.prompt({ title: "翻译结果", message: lines.join("\n"), submitText: "关闭" });
                   return;
                 }
               }
 
-              const translation = await googleTranslate(text);
-              await api.ui.prompt({
-                title: "翻译结果",
-                fields: [
-                  { type: "info", label: "原文", description: text },
-                  { type: "info", label: "译文", description: translation },
-                ],
-                submitText: "关闭",
-              });
-            } catch (e) {
-              try { await api.ui.toast("翻译失败", "error"); } catch {}
-            }
+              const gt = await get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 500))}&langpair=en|zh-CN`);
+              if (gt && gt.responseData && gt.responseData.translatedText) {
+                await api.ui.prompt({ title: "翻译结果", message: `${text}\n${gt.responseData.translatedText}`, submitText: "关闭" });
+              }
+            } catch {}
           },
         },
         {
