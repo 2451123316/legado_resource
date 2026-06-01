@@ -38,6 +38,10 @@ legado.registerPlugin({
       "det.": "限定词",
     };
 
+    function escapeHtml(s) {
+      return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
     return {
       readerContextActions: [
         {
@@ -70,7 +74,7 @@ legado.registerPlugin({
                     fields.push({
                       type: "info",
                       label: `【${pos}】`,
-                      description: def,
+                      description: escapeHtml(def),
                     });
                   }
 
