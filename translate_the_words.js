@@ -18,8 +18,16 @@ legado.registerPlugin({
 
     async function get(url) {
       try {
-        const res = await api.http.request({ url, method: "GET" });
+        const res = await api.http.request({ url, method: "GET", headers: { "User-Agent": "Mozilla/5.0" } });
         if (res && res.body) return JSON.parse(res.body);
+      } catch {}
+      return null;
+    }
+
+    async function getJson(url) {
+      try {
+        const res = await fetch(url);
+        if (res && res.ok) return await res.json();
       } catch {}
       return null;
     }
@@ -51,7 +59,7 @@ legado.registerPlugin({
             try {
               if (/^[a-zA-Z]+$/.test(text)) {
                 const word = text.toLowerCase();
-                const data = await get(`https://dict.youdao.com/jsonapi?q=${encodeURIComponent(word)}`);
+                const data = await getJson(`https://dict.youdao.com/jsonapi?q=${encodeURIComponent(word)}`);
                 const wd = data?.ec?.word?.[0];
                 const trs = wd?.trs;
 
