@@ -59,28 +59,24 @@ legado.registerPlugin({
                   const phonetic = wd.usphone || wd.ukphone || "";
                   const fields = [];
 
-                  if (phonetic) {
-                    fields.push({ type: "info", label: `🔊 /${phonetic}/`, description: "" });
-                  }
-
                   for (const tr of trs) {
                     const raw = tr.tr?.[0]?.l?.i?.[0] || "";
                     if (!raw) continue;
 
                     const match = raw.match(/^\[?([a-z]+\.?)\]?\s+(.+)/);
                     const pos = match ? (posMap[match[1].toLowerCase()] || match[1]) : "其它";
-                    const text = match ? match[2] : raw;
+                    const def = match ? match[2] : raw;
 
                     fields.push({
                       type: "info",
                       label: `【${pos}】`,
-                      description: text,
+                      description: def,
                     });
                   }
 
                   await api.ui.prompt({
-                    title: "词典释义",
-                    message: text,
+                    title: `词典释义 - ${word}`,
+                    message: phonetic ? `/ ${phonetic} /` : "",
                     fields: fields,
                     submitText: "关闭",
                     cancelText: "取消",
