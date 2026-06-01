@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         translate_the_words
 // @namespace    legado.reader.selection.tools
-// @version      3.4.0
+// @version      4.0.0
 // @description  选中英文单词显示多义中文释义，长句整句翻译
 // @author       Legado
 // @category     阅读器
@@ -25,9 +25,17 @@ legado.registerPlugin({
     }
 
     const posMap = {
-      noun: "名词", verb: "动词", adjective: "形容词", adverb: "副词",
-      preposition: "介词", conjunction: "连词", pronoun: "代词",
-      interjection: "感叹词", determiner: "限定词", numeral: "数词",
+      "v.": "动词", "vi.": "动词", "vt.": "动词",
+      "n.": "名词",
+      "adj.": "形容词", "a.": "形容词",
+      "adv.": "副词", "ad.": "副词",
+      "prep.": "介词",
+      "conj.": "连词",
+      "pron.": "代词",
+      "int.": "感叹词",
+      "art.": "冠词",
+      "num.": "数词",
+      "det.": "限定词",
     };
 
     return {
@@ -43,33 +51,42 @@ legado.registerPlugin({
             try {
               if (/^[a-zA-Z]+$/.test(text)) {
                 const word = text.toLowerCase();
-                const dict = await get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+                const data = await get(`https://dict.youdao.com/jsonapi?q=${encodeURIComponent(word)}`);
+                const wd = data?.ec?.word?.[0];
+                const trs = wd?.trs;
 
-                if (dict && Array.isArray(dict) && dict.length > 0) {
-                  const first = dict[0];
-                  const phonetic = first.phonetic || (first.phonetics || []).find(p => p.text)?.text || "";
+                if (trs && trs.length > 0) {
+                  const phonetic = wd.usphone || wd.ukphone || "";
                   const fields = [];
-                  fields.push({ type: "info", label: text, description: phonetic ? `🔊 /${phonetic}/` : "" });
 
-                  for (const entry of dict) {
-                    for (const m of entry.meanings || []) {
-                      const posCn = posMap[m.partOfSpeech] || m.partOfSpeech;
-                      const defs = m.definitions.slice(0, 5);
-                      const items = [];
-                      for (let i = 0; i < defs.length; i++) {
-                        let cn = defs[i].definition;
-                        const trans = await get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(defs[i].definition.slice(0, 300))}&langpair=en|zh-CN`);
-                        if (trans && trans.responseData && trans.responseData.translatedText) {
-                          cn = trans.responseData.translatedText;
-                        }
-                        items.push(`${i + 1}. ${cn}`);
-                      }
-                      fields.push({ type: "info", label: `【${posCn}】`, description: items.join("  |  ") });
+                  if (phonetic) {
+                    fields.push({ type: "info", label: word, description: `🔊 /${phonetic}/` });
+                  }
+
+                  for (const tr of trs) {
+                    const raw = tr.tr?.[0]?.l?.i?.[0] || "";
+                    if (!raw) continue;
+
+                    let posCn = "";
+                    let defText = raw;
+
+                    const match = raw.match(/^\[?([a-z]+\.?)\]?\s+(.+)/);
+                    if (match) {
+                      posCn = posMap[match[1].toLowerCase()] || match[1];
+                      defText = match[2];
                     }
+
+                    const items = defText.split(/[；;]/).map(s => s.trim()).filter(Boolean);
+                    const lines = items.map((item, i) => `${i + 1}. ${item}`);
+                    fields.push({
+                      type: "info",
+                      label: `【${posCn || "其它"}】`,
+                      description: lines.join("\n"),
+                    });
                   }
 
                   await api.ui.prompt({
-                    title: "翻译结果",
+                    title: "词典释义",
                     message: text,
                     fields: fields,
                     submitText: "关闭",
