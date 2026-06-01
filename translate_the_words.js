@@ -77,11 +77,10 @@ legado.registerPlugin({
                     }
 
                     const items = defText.split(/[；;]/).map(s => s.trim()).filter(Boolean);
-                    const lines = items.map((item, i) => `${i + 1}. ${item}`);
                     fields.push({
                       type: "info",
                       label: `【${posCn || "其它"}】`,
-                      description: lines.join("\n"),
+                      description: items.map((item, i) => `${i + 1}. ${item}`).join("  |  "),
                     });
                   }
 
