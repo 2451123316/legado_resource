@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         translate_the_words
 // @namespace    legado.reader.selection.tools
-// @version      3.3.0
+// @version      3.4.0
 // @description  选中英文单词显示多义中文释义，长句整句翻译
 // @author       Legado
 // @category     阅读器
@@ -22,16 +22,6 @@ legado.registerPlugin({
         if (res && res.body) return JSON.parse(res.body);
       } catch {}
       return null;
-    }
-
-    function words(text) {
-      const parts = [];
-      if (Array.isArray(text)) {
-        for (const item of text) {
-          if (item && item[0]) parts.push(item[0]);
-        }
-      }
-      return parts.join("");
     }
 
     const posMap = {
@@ -58,34 +48,54 @@ legado.registerPlugin({
                 if (dict && Array.isArray(dict) && dict.length > 0) {
                   const first = dict[0];
                   const phonetic = first.phonetic || (first.phonetics || []).find(p => p.text)?.text || "";
-                  const lines = [text];
-                  if (phonetic) lines.push(`🔊 /${phonetic}/`);
+                  const fields = [];
+                  fields.push({ type: "info", label: text, description: phonetic ? `🔊 /${phonetic}/` : "" });
 
                   for (const entry of dict) {
                     for (const m of entry.meanings || []) {
                       const posCn = posMap[m.partOfSpeech] || m.partOfSpeech;
                       const defs = m.definitions.slice(0, 5);
-                      lines.push(`【${posCn}】`);
-
+                      const items = [];
                       for (let i = 0; i < defs.length; i++) {
                         let cn = defs[i].definition;
                         const trans = await get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(defs[i].definition.slice(0, 300))}&langpair=en|zh-CN`);
                         if (trans && trans.responseData && trans.responseData.translatedText) {
                           cn = trans.responseData.translatedText;
                         }
-                        lines.push(`  ${i + 1}. ${cn}`);
+                        items.push(`${i + 1}. ${cn}`);
                       }
+                      fields.push({ type: "info", label: `【${posCn}】`, description: items.join("  |  ") });
                     }
                   }
 
-                  await api.ui.prompt({ title: "翻译结果", message: lines.join("\n"), submitText: "关闭" });
+                  await api.ui.prompt({
+                    title: "翻译结果",
+                    message: text,
+                    fields: fields,
+                    submitText: "关闭",
+                    cancelText: "取消",
+                  });
                   return;
                 }
               }
 
               const gt = await get(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 500))}&langpair=en|zh-CN`);
               if (gt && gt.responseData && gt.responseData.translatedText) {
-                await api.ui.prompt({ title: "翻译结果", message: `${text}\n${gt.responseData.translatedText}`, submitText: "关闭" });
+                await api.ui.prompt({
+                  title: "翻译结果",
+                  message: text,
+                  fields: [{ type: "info", label: "译文", description: gt.responseData.translatedText }],
+                  submitText: "关闭",
+                  cancelText: "取消",
+                });
+              } else {
+                await api.ui.prompt({
+                  title: "翻译结果",
+                  message: text,
+                  fields: [{ type: "info", label: "原文", description: text }],
+                  submitText: "关闭",
+                  cancelText: "取消",
+                });
               }
             } catch {}
           },
