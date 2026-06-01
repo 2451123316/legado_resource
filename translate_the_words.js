@@ -57,10 +57,10 @@ legado.registerPlugin({
 
                 if (trs && trs.length > 0) {
                   const phonetic = wd.usphone || wd.ukphone || "";
-                  const fields = [];
+                  const lines = [];
 
                   if (phonetic) {
-                    fields.push({ type: "info", label: word, description: `🔊 /${phonetic}/` });
+                    lines.push(`🔊 /${phonetic}/`);
                   }
 
                   for (const tr of trs) {
@@ -77,19 +77,15 @@ legado.registerPlugin({
                     }
 
                     const items = defText.split(/[；;]/).map(s => s.trim()).filter(Boolean);
-                    fields.push({
-                      type: "info",
-                      label: `【${posCn || "其它"}】`,
-                      description: items.map((item, i) => `${i + 1}. ${item}`).join("  |  "),
-                    });
+                    lines.push(`【${posCn || "其它"}】`);
+                    items.forEach((item, i) => lines.push(`  ${i + 1}. ${item}`));
                   }
 
-                  await api.ui.prompt({
+                  await api.ui.confirm({
                     title: "词典释义",
-                    message: text,
-                    fields: fields,
+                    message: lines.join("\n"),
                     submitText: "关闭",
-                    cancelText: "取消",
+                    cancelText: "关闭",
                   });
                   return;
                 }
